@@ -1,0 +1,54 @@
+name: Thai IME unit tests
+
+on:
+  push:
+  workflow_dispatch:
+
+concurrency:
+  group: thai-ime-unit-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    name: Run :lib:testDebugUnitTest
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (with history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: "zulu"
+          java-version: "17"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Delete old Android SDK cmdline-tools
+        run: rm -rf "$ANDROID_HOME/cmdline-tools/latest"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: "cmdline-tools;latest platform-tools cmake;3.22.1"
+
+      - name: Run unit tests
+        run: ./gradlew :lib:testDebugUnitTest --no-configuration-cache
+
+      - name: Store unit test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: lib/build/reports/tests/testDebugUnitTest
+          if-no-files-found: ignore
+          retention-days: 14
