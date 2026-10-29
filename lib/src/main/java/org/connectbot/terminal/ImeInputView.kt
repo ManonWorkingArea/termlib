@@ -189,15 +189,19 @@ internal class ImeInputView(
             outAttrs.initialSelStart = 0
             outAttrs.initialSelEnd = 0
         } else {
-            // Normal terminal mode:
-            // - TYPE_TEXT_VARIATION_PASSWORD: Shows password-style keyboard with number rows
-            // - TYPE_TEXT_VARIATION_VISIBLE_PASSWORD: Keeps text visible (we handle display ourselves)
-            // - TYPE_TEXT_FLAG_NO_SUGGESTIONS: Disables autocomplete/suggestions
-            // - TYPE_NULL: No special input processing
-            outAttrs.inputType = EditorInfo.TYPE_NULL or
-                EditorInfo.TYPE_TEXT_VARIATION_PASSWORD or
-                EditorInfo.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD or
-                EditorInfo.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+            // Normal terminal input gets IME composition so multi-codepoint text such as Thai
+            // is composed and delivered through commitText. Compose mode with the TYPE_NULL
+            // shortcut keeps raw key events instead.
+            outAttrs.inputType = if (isComposeModeActive) {
+                EditorInfo.TYPE_NULL or
+                    EditorInfo.TYPE_TEXT_VARIATION_PASSWORD or
+                    EditorInfo.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD or
+                    EditorInfo.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+            } else {
+                EditorInfo.TYPE_CLASS_TEXT or
+                    EditorInfo.TYPE_TEXT_FLAG_NO_SUGGESTIONS or
+                    EditorInfo.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+            }
         }
 
         return TerminalInputConnection(this, useFullEditor).also { activeConnection = it }
